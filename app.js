@@ -3,12 +3,23 @@ const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
 
 let accessToken = sessionStorage.getItem("accessToken");
 let tokenClient;
-
 const today = new Date();
+
+/* ---------- INDEX PAGE ---------- */
+
+function isIndexPage() {
+  return document.getElementById("loginSection") !== null;
+}
+
+function isResultsPage() {
+  return document.getElementById("events") !== null;
+}
 
 /* ---------- LOGOWANIE ---------- */
 
 function initGoogleClient() {
+  if (!window.google) return;
+
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
@@ -90,7 +101,7 @@ function initDateSelectors() {
   });
 }
 
-/* ---------- WYNIKI ---------- */
+/* ---------- GOOGLE API ---------- */
 
 async function fetchAllCalendars() {
   const response = await fetch(
@@ -108,10 +119,13 @@ async function fetchEvents(calendarId, start, end) {
   return (await response.json()).items || [];
 }
 
+/* ---------- RESULTS PAGE ---------- */
+
 async function loadResults() {
   const eventsDiv = document.getElementById("events");
   const header = document.getElementById("dateHeader");
-  if (!eventsDiv) return;
+
+  if (!eventsDiv || !header) return;
 
   const storedDate = sessionStorage.getItem("selectedDate");
   if (!storedDate || !accessToken) {
@@ -120,8 +134,8 @@ async function loadResults() {
   }
 
   const { year, month, day } = JSON.parse(storedDate);
-
   const dateObj = new Date(year, month, day);
+
   header.textContent = dateObj.toLocaleDateString("pl-PL", {
     weekday: "long",
     day: "numeric",
@@ -187,15 +201,16 @@ async function loadResults() {
   }
 }
 
-function goBack() {
-  window.location.href = "index.html";
-}
-
 /* ---------- START ---------- */
 
 window.onload = () => {
-  initGoogleClient();
-  setupLogin();
-  initDateSelectors();
-  loadResults();
+  if (isIndexPage()) {
+    initGoogleClient();
+    setupLogin();
+    initDateSelectors();
+  }
+
+  if (isResultsPage()) {
+    loadResults();
+  }
 };
