@@ -124,13 +124,39 @@ showBtn.addEventListener("click", async () => {
         return aTime.localeCompare(bTime);
       });
 
+      const now = new Date();
+
       allEvents.forEach(event => {
         const div = document.createElement("div");
-        const time = event.start.dateTime
-          ? new Date(event.start.dateTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })
-          : "Cały dzień";
 
-        div.innerHTML = `<p>${time} — ${event.summary || "(bez tytułu)"}</p>`;
+        if (event.start.dateTime && event.end.dateTime) {
+          const startTime = new Date(event.start.dateTime);
+          const endTime = new Date(event.end.dateTime);
+
+          const isToday =
+            startTime.getFullYear() === now.getFullYear() &&
+            startTime.getMonth() === now.getMonth() &&
+            startTime.getDate() === now.getDate();
+
+          if (isToday && now >= startTime && now <= endTime) {
+            const endFormatted = endTime.toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+
+            div.innerHTML = `<p>Trwa do ${endFormatted} — ${event.summary || "(bez tytułu)"}</p>`;
+          } else {
+            const timeFormatted = startTime.toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+
+            div.innerHTML = `<p>${timeFormatted} — ${event.summary || "(bez tytułu)"}</p>`;
+          }
+        } else {
+          div.innerHTML = `<p>Cały dzień — ${event.summary || "(bez tytułu)"}</p>`;
+        }
+
         eventsDiv.appendChild(div);
       });
     }
