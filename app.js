@@ -56,6 +56,28 @@ loginBtn.addEventListener("click", () => {
   }).requestAccessToken();
 });
 
+async function fetchAllCalendars() {
+  const response = await fetch(
+    "https://www.googleapis.com/calendar/v3/users/me/calendarList",
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+  const data = await response.json();
+  return data.items || [];
+}
+
+async function fetchEvents(calendarId, start, end) {
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+  const data = await response.json();
+  return data.items || [];
+}
+
 showBtn.addEventListener("click", async () => {
   const year = today.getFullYear();
   const month = parseInt(monthSelect.value);
@@ -64,29 +86,35 @@ showBtn.addEventListener("click", async () => {
   const start = new Date(year, month, day, 0, 0, 0).toISOString();
   const end = new Date(year, month, day, 23, 59, 59).toISOString();
 
-  const response = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
+  eventsDiv.innerHTML = "<p>Ładowanie...</p>";
 
-  const data = await response.json();
+  const calendars = await fetchAllCalendars();
+  let allEvents = [];
+
+  for (const cal of calendars) {
+    const events = await fetchEvents(cal.id, start, end);
+    allEvents = allEvents.concat(events);
+  }
 
   eventsDiv.innerHTML = "";
 
-  if (!data.items || data.items.length === 0) {
+  if (allEvents.length === 0) {
     eventsDiv.innerHTML = "<p>Brak wydarzeń</p>";
   } else {
-    data.items.forEach(event => {
+    allEvents.sort((a, b) => {
+      const aTime = a.start.dateTime || a.start.date || "";
+      const bTime = b.start.dateTime || b.start.date || "";
+      return aTime.localeCompare(bTime);
+    });
+
+    allEvents.forEach(event => {
       const div = document.createElement("div");
+
       const time = event.start.dateTime
         ? new Date(event.start.dateTime).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })
         : "Cały dzień";
 
-      div.innerHTML = `<p>${time} — ${event.summary}</p>`;
+      div.innerHTML = `<p>${time} — ${event.summary || "(bez tytułu)"}</p>`;
       eventsDiv.appendChild(div);
     });
   }
