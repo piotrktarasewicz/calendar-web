@@ -16,6 +16,41 @@ const eventsDiv = document.getElementById("events");
 
 const today = new Date();
 
+let tokenClient;
+
+function showSearchView() {
+  loginView.classList.add("hidden");
+  searchView.classList.remove("hidden");
+}
+
+function showLoginView() {
+  searchView.classList.add("hidden");
+  resultView.classList.add("hidden");
+  loginView.classList.remove("hidden");
+}
+
+function initGoogleClient() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (response) => {
+      if (response.access_token) {
+        accessToken = response.access_token;
+        sessionStorage.setItem("accessToken", accessToken);
+        showSearchView();
+      }
+    }
+  });
+}
+
+loginBtn.addEventListener("click", () => {
+  tokenClient.requestAccessToken();
+});
+
+if (accessToken) {
+  showSearchView();
+}
+
 function initMonths() {
   for (let i = today.getMonth(); i < 12; i++) {
     const option = document.createElement("option");
@@ -43,39 +78,10 @@ function updateDays() {
 
 monthSelect.addEventListener("change", updateDays);
 
-function showSearchView() {
-  loginView.classList.add("hidden");
-  searchView.classList.remove("hidden");
-}
-
-function showLoginView() {
-  searchView.classList.add("hidden");
-  resultView.classList.add("hidden");
-  loginView.classList.remove("hidden");
-}
-
-if (accessToken) {
-  showSearchView();
-}
-
-loginBtn.addEventListener("click", () => {
-  google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (tokenResponse) => {
-      accessToken = tokenResponse.access_token;
-      sessionStorage.setItem("accessToken", accessToken);
-      showSearchView();
-    },
-  }).requestAccessToken();
-});
-
 async function fetchAllCalendars() {
   const response = await fetch(
     "https://www.googleapis.com/calendar/v3/users/me/calendarList",
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   return (await response.json()).items || [];
 }
@@ -83,9 +89,7 @@ async function fetchAllCalendars() {
 async function fetchEvents(calendarId, start, end) {
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   return (await response.json()).items || [];
 }
@@ -148,3 +152,4 @@ backBtn.addEventListener("click", () => {
 });
 
 initMonths();
+window.onload = initGoogleClient;
