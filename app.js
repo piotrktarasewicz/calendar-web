@@ -2,33 +2,11 @@ const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleuse
 const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
 
 let accessToken = sessionStorage.getItem("accessToken");
-
-const loginBtn = document.getElementById("loginBtn");
-const loginView = document.getElementById("loginView");
-const searchView = document.getElementById("searchView");
-const resultView = document.getElementById("resultView");
-
-const monthSelect = document.getElementById("monthSelect");
-const daySelect = document.getElementById("daySelect");
-const showBtn = document.getElementById("showBtn");
-const backBtn = document.getElementById("backBtn");
-const eventsDiv = document.getElementById("events");
-const resultHeader = document.getElementById("resultHeader");
+let tokenClient;
 
 const today = new Date();
 
-let tokenClient;
-
-function showSearchView() {
-  loginView.classList.add("hidden");
-  searchView.classList.remove("hidden");
-}
-
-function showLoginView() {
-  searchView.classList.add("hidden");
-  resultView.classList.add("hidden");
-  loginView.classList.remove("hidden");
-}
+/* ---------- LOGOWANIE ---------- */
 
 function initGoogleClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
@@ -38,46 +16,81 @@ function initGoogleClient() {
       if (response.access_token) {
         accessToken = response.access_token;
         sessionStorage.setItem("accessToken", accessToken);
-        showSearchView();
+        showSearch();
       }
     }
   });
 }
 
-loginBtn.addEventListener("click", () => {
-  tokenClient.requestAccessToken();
-});
-
-if (accessToken) {
-  showSearchView();
+function showSearch() {
+  const loginSection = document.getElementById("loginSection");
+  const searchSection = document.getElementById("searchSection");
+  if (loginSection && searchSection) {
+    loginSection.style.display = "none";
+    searchSection.style.display = "block";
+  }
 }
 
-function initMonths() {
+function setupLogin() {
+  const loginBtn = document.getElementById("loginBtn");
+  if (!loginBtn) return;
+
+  if (accessToken) {
+    showSearch();
+  }
+
+  loginBtn.addEventListener("click", () => {
+    tokenClient.requestAccessToken();
+  });
+}
+
+/* ---------- WYBÓR DATY ---------- */
+
+function initDateSelectors() {
+  const monthSelect = document.getElementById("monthSelect");
+  const daySelect = document.getElementById("daySelect");
+  const showBtn = document.getElementById("showBtn");
+
+  if (!monthSelect || !daySelect) return;
+
   for (let i = today.getMonth(); i < 12; i++) {
     const option = document.createElement("option");
     option.value = i;
     option.text = new Date(0, i).toLocaleString("pl-PL", { month: "long" });
     monthSelect.appendChild(option);
   }
-  updateDays();
-}
 
-function updateDays() {
-  daySelect.innerHTML = "";
-  const selectedMonth = parseInt(monthSelect.value);
-  const year = today.getFullYear();
-  const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
-  const startDay = selectedMonth === today.getMonth() ? today.getDate() : 1;
+  function updateDays() {
+    daySelect.innerHTML = "";
+    const selectedMonth = parseInt(monthSelect.value);
+    const year = today.getFullYear();
+    const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+    const startDay = selectedMonth === today.getMonth() ? today.getDate() : 1;
 
-  for (let d = startDay; d <= daysInMonth; d++) {
-    const option = document.createElement("option");
-    option.value = d;
-    option.text = d;
-    daySelect.appendChild(option);
+    for (let d = startDay; d <= daysInMonth; d++) {
+      const option = document.createElement("option");
+      option.value = d;
+      option.text = d;
+      daySelect.appendChild(option);
+    }
   }
+
+  monthSelect.addEventListener("change", updateDays);
+  updateDays();
+
+  showBtn.addEventListener("click", () => {
+    const selectedDate = {
+      year: today.getFullYear(),
+      month: parseInt(monthSelect.value),
+      day: parseInt(daySelect.value)
+    };
+
+    sessionStorage.setItem("selectedDate", JSON.stringify(selectedDate));
+    window.location.href = "results.html";
+  });
 }
 
-monthSelect.addEventListener("change", updateDays);
+/* ---------- WYNIKI ---------- */
 
 async function fetchAllCalendars() {
   const response = await fetch(
@@ -95,15 +108,31 @@ async function fetchEvents(calendarId, start, end) {
   return (await response.json()).items || [];
 }
 
-showBtn.addEventListener("click", async () => {
-  const year = today.getFullYear();
-  const month = parseInt(monthSelect.value);
-  const day = parseInt(daySelect.value);
+async function loadResults() {
+  const eventsDiv = document.getElementById("events");
+  const header = document.getElementById("dateHeader");
+  if (!eventsDiv) return;
+
+  const storedDate = sessionStorage.getItem("selectedDate");
+  if (!storedDate || !accessToken) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const { year, month, day } = JSON.parse(storedDate);
+
+  const dateObj = new Date(year, month, day);
+  header.textContent = dateObj.toLocaleDateString("pl-PL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
 
   const start = new Date(year, month, day, 0, 0, 0).toISOString();
   const end = new Date(year, month, day, 23, 59, 59).toISOString();
 
-  eventsDiv.innerHTML = "<p>Ładowanie...</p>";
+  eventsDiv.textContent = "Ładowanie...";
 
   try {
     const calendars = await fetchAllCalendars();
@@ -114,70 +143,59 @@ showBtn.addEventListener("click", async () => {
       allEvents = allEvents.concat(events);
     }
 
-    eventsDiv.innerHTML = "";
-
     if (allEvents.length === 0) {
-      eventsDiv.innerHTML = "<p>Brak wydarzeń</p>";
-    } else {
-      allEvents.sort((a, b) => {
-        const aTime = a.start.dateTime || a.start.date || "";
-        const bTime = b.start.dateTime || b.start.date || "";
-        return aTime.localeCompare(bTime);
-      });
-
-      const now = new Date();
-
-      allEvents.forEach(event => {
-        const div = document.createElement("div");
-
-        if (event.start.dateTime && event.end.dateTime) {
-          const startTime = new Date(event.start.dateTime);
-          const endTime = new Date(event.end.dateTime);
-
-          const isToday =
-            startTime.getFullYear() === now.getFullYear() &&
-            startTime.getMonth() === now.getMonth() &&
-            startTime.getDate() === now.getDate();
-
-          if (isToday && now >= startTime && now <= endTime) {
-            const endFormatted = endTime.toLocaleTimeString("pl-PL", {
-              hour: "2-digit",
-              minute: "2-digit"
-            });
-
-            div.innerHTML = `<p>Trwa do ${endFormatted} — ${event.summary || "(bez tytułu)"}</p>`;
-          } else {
-            const timeFormatted = startTime.toLocaleTimeString("pl-PL", {
-              hour: "2-digit",
-              minute: "2-digit"
-            });
-
-            div.innerHTML = `<p>${timeFormatted} — ${event.summary || "(bez tytułu)"}</p>`;
-          }
-        } else {
-          div.innerHTML = `<p>Cały dzień — ${event.summary || "(bez tytułu)"}</p>`;
-        }
-
-        eventsDiv.appendChild(div);
-      });
+      eventsDiv.textContent = "Brak wydarzeń";
+      return;
     }
 
-    searchView.classList.add("hidden");
-    resultView.classList.remove("hidden");
-    resultHeader.textContent = "Wydarzenia – wczytano";
+    allEvents.sort((a, b) => {
+      const aTime = a.start.dateTime || a.start.date || "";
+      const bTime = b.start.dateTime || b.start.date || "";
+      return aTime.localeCompare(bTime);
+    });
 
-  } catch (error) {
-    sessionStorage.removeItem("accessToken");
-    accessToken = null;
-    showLoginView();
-    alert("Sesja wygasła. Zaloguj ponownie.");
+    const now = new Date();
+    eventsDiv.innerHTML = "";
+
+    allEvents.forEach(event => {
+      const div = document.createElement("div");
+
+      if (event.start.dateTime && event.end.dateTime) {
+        const startTime = new Date(event.start.dateTime);
+        const endTime = new Date(event.end.dateTime);
+
+        const isToday =
+          startTime.getFullYear() === now.getFullYear() &&
+          startTime.getMonth() === now.getMonth() &&
+          startTime.getDate() === now.getDate();
+
+        if (isToday && now >= startTime && now <= endTime) {
+          div.textContent = `Trwa do ${endTime.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} — ${event.summary || "(bez tytułu)"}`;
+        } else {
+          div.textContent = `${startTime.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} — ${event.summary || "(bez tytułu)"}`;
+        }
+      } else {
+        div.textContent = `Cały dzień — ${event.summary || "(bez tytułu)"}`;
+      }
+
+      eventsDiv.appendChild(div);
+    });
+
+  } catch (e) {
+    sessionStorage.clear();
+    window.location.href = "index.html";
   }
-});
+}
 
-backBtn.addEventListener("click", () => {
-  resultView.classList.add("hidden");
-  searchView.classList.remove("hidden");
-});
+function goBack() {
+  window.location.href = "index.html";
+}
 
-initMonths();
-window.onload = initGoogleClient;
+/* ---------- START ---------- */
+
+window.onload = () => {
+  initGoogleClient();
+  setupLogin();
+  initDateSelectors();
+  loadResults();
+};
