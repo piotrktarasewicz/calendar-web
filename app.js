@@ -13,6 +13,7 @@ const daySelect = document.getElementById("daySelect");
 const showBtn = document.getElementById("showBtn");
 const backBtn = document.getElementById("backBtn");
 const eventsDiv = document.getElementById("events");
+const resultHeader = document.getElementById("resultHeader");
 
 const today = new Date();
 
@@ -163,6 +164,7 @@ showBtn.addEventListener("click", async () => {
 
     searchView.classList.add("hidden");
     resultView.classList.remove("hidden");
+    resultHeader.textContent = "Wydarzenia – wczytano";
 
   } catch (error) {
     sessionStorage.removeItem("accessToken");
