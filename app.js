@@ -5,7 +5,7 @@ let accessToken = sessionStorage.getItem("accessToken");
 let tokenClient;
 const today = new Date();
 
-/* ---------- INDEX PAGE ---------- */
+/* ---------- ROZPOZNAWANIE STRONY ---------- */
 
 function isIndexPage() {
   return document.getElementById("loginSection") !== null;
@@ -119,7 +119,7 @@ async function fetchEvents(calendarId, start, end) {
   return (await response.json()).items || [];
 }
 
-/* ---------- RESULTS PAGE ---------- */
+/* ---------- STRONA WYNIKÓW ---------- */
 
 async function loadResults() {
   const eventsDiv = document.getElementById("events");
@@ -199,6 +199,12 @@ async function loadResults() {
     sessionStorage.clear();
     window.location.href = "index.html";
   }
+}
+
+/* ---------- STABILNY POWRÓT (GITHUB PAGES) ---------- */
+
+function goBack() {
+  window.location.href = window.location.origin + "/calendar-web/index.html";
 }
 
 /* ---------- START ---------- */
