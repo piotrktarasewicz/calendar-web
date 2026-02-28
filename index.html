@@ -3,21 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NVDA Calendar Web</title>
+<title>Kalendarz – wybór daty</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
 
-<div id="loginView">
-  <h1>Kalendarz</h1>
+<h1>Kalendarz</h1>
+
+<div id="loginSection">
   <button id="loginBtn">Zaloguj Google</button>
 </div>
 
-<div id="searchView" class="hidden">
-  <h1>Wybierz datę</h1>
-
+<div id="searchSection" style="display:none;">
   <label for="monthSelect">Miesiąc:</label>
   <select id="monthSelect"></select>
 
@@ -25,12 +24,6 @@
   <select id="daySelect"></select>
 
   <button id="showBtn">Pokaż wydarzenia</button>
-</div>
-
-<div id="resultView" class="hidden">
-  <h1 id="resultHeader">Wydarzenia</h1>
-  <div id="events"></div>
-  <button id="backBtn">Powrót</button>
 </div>
 
 <script src="app.js"></script>
