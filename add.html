@@ -20,14 +20,21 @@
 
 <label>Nazwa wydarzenia</label> <input id="title" type="text">
 
-<label>Dzień</label> <input id="date" type="date">
+<label>Dzień</label> <select id="day"></select>
 
-<label>Godzina</label> <input id="time" type="time">
+<label>Miesiąc</label> <select id="month"></select>
+
+<label>Godzina</label> <select id="hour"></select>
+
+<label>Minuty</label> <select id="minute"></select>
 
 <button id="addBtn">Dodaj wydarzenie</button>
 
-<p id="status"></p>
+</div>
 
+<div id="dialog" class="hidden">
+<p>Wydarzenie utworzone.</p>
+<button id="nextBtn">Dodaj kolejne</button>
 </div>
 
 <script src="add.js"></script>
