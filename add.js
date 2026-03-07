@@ -95,18 +95,18 @@ hourSelect.appendChild(opt)
 
 }
 
-const minutes=["00","15","30","45"]
+/* MINUTY CO 5 MINUT */
 
-minutes.forEach(m=>{
+for(let m=0;m<60;m+=5){
 
 let opt=document.createElement("option")
 
-opt.value=m
-opt.text=m
+opt.value=m.toString().padStart(2,"0")
+opt.text=m.toString().padStart(2,"0")
 
 minuteSelect.appendChild(opt)
 
-})
+}
 
 }
 
@@ -208,7 +208,7 @@ timeZone:"Europe/Warsaw"
 
 }
 
-  const response=await fetch(
+const response=await fetch(
 
 "https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(FAMILY_CALENDAR)+"/events",
 
