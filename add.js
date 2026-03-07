@@ -14,6 +14,7 @@ const loginBtn = document.getElementById("loginBtn")
 const addBtn = document.getElementById("addBtn")
 
 const titleInput = document.getElementById("title")
+const locationInput = document.getElementById("location")
 
 const daySelect = document.getElementById("day")
 const monthSelect = document.getElementById("month")
@@ -203,6 +204,7 @@ monthSelect.onchange=updateDays
 addBtn.onclick = async ()=>{
 
 const title=titleInput.value
+const location=locationInput.value
 
 const day=parseInt(daySelect.value)
 const month=parseInt(monthSelect.value)
@@ -234,6 +236,7 @@ const endISO=end.toISOString()
 const event={
 
 summary:title,
+location:location,
 
 start:{
 dateTime:startISO,
@@ -274,6 +277,7 @@ dialog.classList.remove("hidden")
 speak("Wydarzenie utworzone")
 
 titleInput.value=""
+locationInput.value=""
 
 }else{
 
