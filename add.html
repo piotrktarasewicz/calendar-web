@@ -3,25 +3,32 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Dodaj wydarzenie</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dodaj wydarzenie</title>
+
 <link rel="stylesheet" href="style.css">
 
-<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 </head>
 
 <body>
 
-<h1>Dodaj wydarzenie</h1>
-
 <div id="loginView">
-<button id="loginBtn">Zaloguj w Google</button>
+
+<h1>Dodawanie wydarzenia</h1>
+
+<button id="loginBtn">Zaloguj z Google</button>
+
 </div>
 
 <div id="formView" class="hidden">
 
+<h1>Nowe wydarzenie</h1>
+
 <label>Nazwa wydarzenia</label> <input id="title" type="text">
+
+<h2>Początek</h2>
 
 <label>Dzień</label> <select id="day"></select>
 
@@ -29,15 +36,26 @@
 
 <label>Godzina</label> <select id="hour"></select>
 
-<label>Minuty</label> <select id="minute"></select>
+<label>Minuta</label> <select id="minute"></select>
+
+<h2>Czas trwania</h2>
+
+<label>Dni</label> <select id="durDays"></select>
+
+<label>Godziny</label> <select id="durHours"></select>
+
+<label>Minuty</label> <select id="durMinutes"></select>
 
 <button id="addBtn">Dodaj wydarzenie</button>
 
 </div>
 
 <div id="dialog" class="hidden">
-<p>Wydarzenie utworzone.</p>
+
+<p>Wydarzenie utworzone</p>
+
 <button id="nextBtn">Dodaj kolejne</button>
+
 </div>
 
 <script src="add.js"></script>
