@@ -1,6 +1,6 @@
 const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleusercontent.com"
 
-const FAMILY_CALENDAR = "family02518920920168070169@group.calendar.google.com"
+const FAMILY_CALENDAR = "[family02518920920168070169@group.calendar.google.com](mailto:family02518920920168070169@group.calendar.google.com)"
 
 const SCOPES = "https://www.googleapis.com/auth/calendar"
 
@@ -22,6 +22,40 @@ const minuteSelect = document.getElementById("minute")
 
 const dialog = document.getElementById("dialog")
 const nextBtn = document.getElementById("nextBtn")
+
+const months = [
+"Styczeń",
+"Luty",
+"Marzec",
+"Kwiecień",
+"Maj",
+"Czerwiec",
+"Lipiec",
+"Sierpień",
+"Wrzesień",
+"Październik",
+"Listopad",
+"Grudzień"
+]
+
+function speak(text){
+
+const live=document.createElement("div")
+
+live.setAttribute("aria-live","assertive")
+
+live.style.position="absolute"
+live.style.left="-9999px"
+
+live.textContent=text
+
+document.body.appendChild(live)
+
+setTimeout(()=>{
+document.body.removeChild(live)
+},2000)
+
+}
 
 function focusForm(){
 
@@ -71,6 +105,7 @@ for(let h=0;h<24;h++){
 let opt=document.createElement("option")
 opt.value=h
 opt.text=h.toString().padStart(2,"0")
+
 hourSelect.appendChild(opt)
 
 }
@@ -80,8 +115,10 @@ const minutes=["00","15","30","45"]
 minutes.forEach(m=>{
 
 let opt=document.createElement("option")
+
 opt.value=m
 opt.text=m
+
 minuteSelect.appendChild(opt)
 
 })
@@ -92,14 +129,16 @@ function populateDate(){
 
 const today=new Date()
 
-const currentMonth=today.getMonth()+1
+const currentMonth=today.getMonth()
 const currentDay=today.getDate()
 
-for(let m=currentMonth;m<=12;m++){
+for(let m=currentMonth;m<12;m++){
 
 let opt=document.createElement("option")
-opt.value=m
-opt.text=m
+
+opt.value=m+1
+opt.text=months[m]
+
 monthSelect.appendChild(opt)
 
 }
@@ -114,24 +153,28 @@ daySelect.innerHTML=""
 
 const today=new Date()
 
-const selectedMonth=parseInt(monthSelect.value)
+const selectedMonth=parseInt(monthSelect.value)-1
 
-const currentMonth=today.getMonth()+1
+const currentMonth=today.getMonth()
 const currentDay=today.getDate()
 
-const daysInMonth=new Date(today.getFullYear(),selectedMonth,0).getDate()
+const daysInMonth=new Date(today.getFullYear(),selectedMonth+1,0).getDate()
 
 let startDay=1
 
 if(selectedMonth===currentMonth){
+
 startDay=currentDay
+
 }
 
 for(let d=startDay;d<=daysInMonth;d++){
 
 let opt=document.createElement("option")
+
 opt.value=d
 opt.text=d
+
 daySelect.appendChild(opt)
 
 }
@@ -152,8 +195,11 @@ const minute=minuteSelect.value
 const year=new Date().getFullYear()
 
 if(!title){
+
 alert("Podaj nazwę wydarzenia")
+
 return
+
 }
 
 const dateBase = `${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}T${hour}:${minute}:00`
@@ -161,7 +207,7 @@ const dateBase = `${year}-${month.toString().padStart(2,"0")}-${day.toString().p
 const startDateTime = dateBase + "+01:00"
 const endDateTime = dateBase + "+01:00"
 
-  const event={
+const event={
 
 summary:title,
 
@@ -195,12 +241,15 @@ if(response.ok){
 formView.classList.add("hidden")
 dialog.classList.remove("hidden")
 
+speak("Wydarzenie utworzone")
+
 titleInput.value=""
 
 }else{
 
 const errorText = await response.text()
-alert("Błąd zapisu: " + errorText)
+
+alert("Błąd zapisu: "+errorText)
 
 }
 
