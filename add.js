@@ -156,11 +156,12 @@ alert("Podaj nazwę wydarzenia")
 return
 }
 
-const startDateTime=`${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}T${hour}:${minute}:00`
+const dateBase = `${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}T${hour}:${minute}:00`
 
-const endDateTime=startDateTime
+const startDateTime = dateBase + "+01:00"
+const endDateTime = dateBase + "+01:00"
 
-const event={
+  const event={
 
 summary:title,
 
