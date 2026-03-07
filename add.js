@@ -23,6 +23,16 @@ const minuteSelect = document.getElementById("minute")
 const dialog = document.getElementById("dialog")
 const nextBtn = document.getElementById("nextBtn")
 
+function focusForm(){
+
+titleInput.focus()
+
+setTimeout(()=>{
+titleInput.focus()
+},200)
+
+}
+
 function initGoogle(){
 
 tokenClient = google.accounts.oauth2.initTokenClient({
@@ -45,16 +55,6 @@ focusForm()
 }
 
 })
-
-}
-
-function focusForm(){
-
-titleInput.focus()
-
-setTimeout(()=>{
-titleInput.focus()
-},200)
 
 }
 
@@ -218,6 +218,8 @@ window.onload = ()=>{
 populateDate()
 populateTime()
 
+initGoogle()
+
 const savedToken=sessionStorage.getItem("calendar_token")
 
 if(savedToken){
@@ -228,16 +230,6 @@ loginView.classList.add("hidden")
 formView.classList.remove("hidden")
 
 focusForm()
-
-}else{
-
-const script = document.createElement("script")
-
-script.src="https://accounts.google.com/gsi/client"
-
-script.onload = initGoogle
-
-document.body.appendChild(script)
 
 }
 
