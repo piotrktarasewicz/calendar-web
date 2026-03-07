@@ -199,7 +199,8 @@ titleInput.value=""
 
 }else{
 
-alert("Błąd zapisu")
+const errorText = await response.text()
+alert("Błąd zapisu: " + errorText)
 
 }
 
