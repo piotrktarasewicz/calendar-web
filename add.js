@@ -1,6 +1,6 @@
 const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleusercontent.com"
 
-const FAMILY_CALENDAR = "family02518920920168070169@group.calendar.google.com"
+const FAMILY_CALENDAR = "[family02518920920168070169@group.calendar.google.com](mailto:family02518920920168070169@group.calendar.google.com)"
 
 const SCOPES = "https://www.googleapis.com/auth/calendar"
 
@@ -22,21 +22,6 @@ const minuteSelect = document.getElementById("minute")
 
 const dialog = document.getElementById("dialog")
 const nextBtn = document.getElementById("nextBtn")
-
-const months = [
-"Styczeń",
-"Luty",
-"Marzec",
-"Kwiecień",
-"Maj",
-"Czerwiec",
-"Lipiec",
-"Sierpień",
-"Wrzesień",
-"Październik",
-"Listopad",
-"Grudzień"
-]
 
 function speak(text){
 
@@ -129,15 +114,15 @@ function populateDate(){
 
 const today=new Date()
 
-const currentMonth=today.getMonth()
+const currentMonth=today.getMonth()+1
 const currentDay=today.getDate()
 
-for(let m=currentMonth;m<12;m++){
+for(let m=currentMonth;m<=12;m++){
 
 let opt=document.createElement("option")
 
-opt.value=m+1
-opt.text=months[m]
+opt.value=m
+opt.text=m
 
 monthSelect.appendChild(opt)
 
@@ -153,12 +138,12 @@ daySelect.innerHTML=""
 
 const today=new Date()
 
-const selectedMonth=parseInt(monthSelect.value)-1
+const selectedMonth=parseInt(monthSelect.value)
 
-const currentMonth=today.getMonth()
+const currentMonth=today.getMonth()+1
 const currentDay=today.getDate()
 
-const daysInMonth=new Date(today.getFullYear(),selectedMonth+1,0).getDate()
+const daysInMonth=new Date(today.getFullYear(),selectedMonth,0).getDate()
 
 let startDay=1
 
