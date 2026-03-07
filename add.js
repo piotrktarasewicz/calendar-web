@@ -1,6 +1,6 @@
 const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleusercontent.com"
 
-const FAMILY_CALENDAR = "family02518920920168070169@group.calendar.google.com"
+const FAMILY_CALENDAR = "[family02518920920168070169@group.calendar.google.com"
 
 const SCOPES = "https://www.googleapis.com/auth/calendar"
 
@@ -19,6 +19,10 @@ const daySelect = document.getElementById("day")
 const monthSelect = document.getElementById("month")
 const hourSelect = document.getElementById("hour")
 const minuteSelect = document.getElementById("minute")
+
+const durDays = document.getElementById("durDays")
+const durHours = document.getElementById("durHours")
+const durMinutes = document.getElementById("durMinutes")
 
 const dialog = document.getElementById("dialog")
 const nextBtn = document.getElementById("nextBtn")
@@ -78,9 +82,7 @@ focusForm()
 }
 
 loginBtn.onclick = ()=>{
-
 tokenClient.requestAccessToken()
-
 }
 
 function populateTime(){
@@ -95,16 +97,48 @@ hourSelect.appendChild(opt)
 
 }
 
-/* MINUTY CO 5 MINUT */
-
 for(let m=0;m<60;m+=5){
 
 let opt=document.createElement("option")
 
-opt.value=m.toString().padStart(2,"0")
+opt.value=m
 opt.text=m.toString().padStart(2,"0")
 
 minuteSelect.appendChild(opt)
+
+}
+
+}
+
+function populateDuration(){
+
+for(let d=0;d<=30;d++){
+
+let opt=document.createElement("option")
+opt.value=d
+opt.text=d
+
+durDays.appendChild(opt)
+
+}
+
+for(let h=0;h<24;h++){
+
+let opt=document.createElement("option")
+opt.value=h
+opt.text=h
+
+durHours.appendChild(opt)
+
+}
+
+for(let m=0;m<60;m+=5){
+
+let opt=document.createElement("option")
+opt.value=m
+opt.text=m
+
+durMinutes.appendChild(opt)
 
 }
 
@@ -148,9 +182,7 @@ const daysInMonth=new Date(today.getFullYear(),selectedMonth,0).getDate()
 let startDay=1
 
 if(selectedMonth===currentMonth){
-
 startDay=currentDay
-
 }
 
 for(let d=startDay;d<=daysInMonth;d++){
@@ -172,37 +204,44 @@ addBtn.onclick = async ()=>{
 
 const title=titleInput.value
 
-const day=daySelect.value
-const month=monthSelect.value
-const hour=hourSelect.value
-const minute=minuteSelect.value
+const day=parseInt(daySelect.value)
+const month=parseInt(monthSelect.value)
+const hour=parseInt(hourSelect.value)
+const minute=parseInt(minuteSelect.value)
+
+const durationDays=parseInt(durDays.value)
+const durationHours=parseInt(durHours.value)
+const durationMinutes=parseInt(durMinutes.value)
 
 const year=new Date().getFullYear()
 
 if(!title){
-
 alert("Podaj nazwę wydarzenia")
-
 return
-
 }
 
-const dateBase = `${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}T${hour}:${minute}:00`
+const start=new Date(year,month-1,day,hour,minute)
 
-const startDateTime = dateBase + "+01:00"
-const endDateTime = dateBase + "+01:00"
+const end=new Date(start)
+
+end.setDate(end.getDate()+durationDays)
+end.setHours(end.getHours()+durationHours)
+end.setMinutes(end.getMinutes()+durationMinutes)
+
+const startISO=start.toISOString()
+const endISO=end.toISOString()
 
 const event={
 
 summary:title,
 
 start:{
-dateTime:startDateTime,
+dateTime:startISO,
 timeZone:"Europe/Warsaw"
 },
 
 end:{
-dateTime:endDateTime,
+dateTime:endISO,
 timeZone:"Europe/Warsaw"
 }
 
@@ -259,6 +298,7 @@ window.onload = ()=>{
 
 populateDate()
 populateTime()
+populateDuration()
 
 initGoogle()
 
