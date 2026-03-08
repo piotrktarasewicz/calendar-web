@@ -1,6 +1,6 @@
 const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleusercontent.com"
 
-const FAMILY_CALENDAR = "[family02518920920168070169@group.calendar.google.com](mailto:family02518920920168070169@group.calendar.google.com)"
+const FAMILY_CALENDAR = "family02518920920168070169@group.calendar.google.com"
 
 const SCOPES = "https://www.googleapis.com/auth/calendar"
 
