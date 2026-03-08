@@ -261,21 +261,30 @@ let event
 
 if(allDayCheckbox.checked){
 
+const startDate = new Date(year, month-1, day)
+
+const endDate = new Date(startDate)
+endDate.setDate(endDate.getDate() + durationDays + 1)
+
+const startStr = startDate.toISOString().split("T")[0]
+const endStr   = endDate.toISOString().split("T")[0]
+
 event={
 
 summary:title,
 location:location,
 
 start:{
-date:`${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}`
+date:startStr
 },
 
 end:{
-date:`${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}`
+date:endStr
 }
 
 }
 
+}
 }else{
 
 const start=new Date(year,month-1,day,hour,minute)
