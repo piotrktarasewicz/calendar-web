@@ -19,6 +19,7 @@ const LOCATION_STORAGE_KEY = "last_location";
 let tokenClient = null;
 let accessToken = null;
 let lastFocusedElement = null;
+let googleInitStarted = false;
 
 const loginView = document.getElementById("loginView");
 const formView = document.getElementById("formView");
@@ -46,6 +47,7 @@ const srStatus = document.getElementById("srStatus");
 const formStatus = document.getElementById("formStatus");
 
 const successDialog = document.getElementById("successDialog");
+const successText = document.getElementById("successText");
 const successOkBtn = document.getElementById("successOkBtn");
 
 const errorDialog = document.getElementById("errorDialog");
@@ -53,18 +55,31 @@ const errorText = document.getElementById("errorText");
 const errorOkBtn = document.getElementById("errorOkBtn");
 
 function announce(message) {
+  if (!srStatus) {
+    return;
+  }
+
   srStatus.textContent = "";
+
   window.setTimeout(() => {
     srStatus.textContent = message;
   }, 30);
 }
 
 function showFormStatus(message) {
+  if (!formStatus) {
+    return;
+  }
+
   formStatus.textContent = message;
   formStatus.classList.remove("hidden");
 }
 
 function clearFormStatus() {
+  if (!formStatus) {
+    return;
+  }
+
   formStatus.textContent = "";
   formStatus.classList.add("hidden");
 }
@@ -87,7 +102,9 @@ function rememberLastFocus() {
 
 function restoreLastFocus() {
   if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
-    window.setTimeout(() => lastFocusedElement.focus(), 0);
+    window.setTimeout(() => {
+      lastFocusedElement.focus();
+    }, 0);
     return;
   }
 
@@ -105,6 +122,7 @@ function toLocalDateTimeString(date) {
   const hours = pad2(date.getHours());
   const minutes = pad2(date.getMinutes());
   const seconds = "00";
+
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
@@ -163,13 +181,17 @@ function populateDays() {
     daySelect.appendChild(option);
   }
 
-  if (previousValue && [...daySelect.options].some((opt) => opt.value === previousValue)) {
+  if (
+    previousValue &&
+    [...daySelect.options].some((option) => option.value === previousValue)
+  ) {
     daySelect.value = previousValue;
   }
 }
 
 function syncDateSelectorsWithToday() {
   const now = new Date();
+
   yearSelect.value = String(now.getFullYear());
   monthSelect.value = String(now.getMonth() + 1);
   populateDays();
@@ -237,45 +259,21 @@ function setCurrentTimeRoundedToFiveMinutes() {
     rounded.setMinutes(roundedMinutes, 0, 0);
   }
 
-  hourSelect.value = String(rounded.getHours());
+  hourSelect.value = String(rounded.getHours() % 24);
   minuteSelect.value = String(rounded.getMinutes());
 }
 
 function toggleTimeBlock() {
   const isAllDay = allDayCheckbox.checked;
+
   timeBlock.classList.toggle("hidden", isAllDay);
   durHoursSelect.disabled = isAllDay;
   durMinutesSelect.disabled = isAllDay;
 }
 
-function initGoogle() {
-  if (!window.google || !google.accounts || !google.accounts.oauth2) {
-    showErrorDialog(
-      "Nie udało się załadować logowania Google. Odśwież stronę i spróbuj ponownie."
-    );
-    return;
-  }
-
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: (tokenResponse) => {
-      if (!tokenResponse || !tokenResponse.access_token) {
-        showErrorDialog("Logowanie do Google nie powiodło się.");
-        return;
-      }
-
-      accessToken = tokenResponse.access_token;
-      sessionStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
-      showViewAfterLogin();
-      announce("Zalogowano do Google. Formularz dodawania wydarzeń jest dostępny.");
-    },
-  });
-}
-
 function showSuccessDialog(message) {
   rememberLastFocus();
-  document.getElementById("successText").textContent = message;
+  successText.textContent = message;
   successDialog.showModal();
   successOkBtn.focus();
   announce(message);
@@ -306,14 +304,19 @@ function validateForm(data) {
     return "Podaj nazwę wydarzenia.";
   }
 
-  if (!FAMILY_CALENDAR || FAMILY_CALENDAR.includes("mailto:") || FAMILY_CALENDAR.includes("[") || FAMILY_CALENDAR.includes("]")) {
+  if (
+    !FAMILY_CALENDAR ||
+    FAMILY_CALENDAR.includes("mailto:") ||
+    FAMILY_CALENDAR.includes("[") ||
+    FAMILY_CALENDAR.includes("]")
+  ) {
     return "Nieprawidłowy identyfikator kalendarza w pliku add.js. Wpisz czyste ID kalendarza Google.";
   }
 
   if (!data.allDay) {
     const totalMinutes =
-      (data.durationDays * 24 * 60) +
-      (data.durationHours * 60) +
+      data.durationDays * 24 * 60 +
+      data.durationHours * 60 +
       data.durationMinutes;
 
     if (totalMinutes <= 0) {
@@ -352,6 +355,7 @@ function buildEventPayload(data) {
   if (data.allDay) {
     const startDate = new Date(data.year, data.month - 1, data.day);
     const endDate = new Date(startDate);
+
     endDate.setDate(endDate.getDate() + data.durationDays + 1);
 
     event.start = {
@@ -365,9 +369,17 @@ function buildEventPayload(data) {
     return event;
   }
 
-  const start = new Date(data.year, data.month - 1, data.day, data.hour, data.minute, 0, 0);
-  const end = new Date(start.getTime());
+  const start = new Date(
+    data.year,
+    data.month - 1,
+    data.day,
+    data.hour,
+    data.minute,
+    0,
+    0
+  );
 
+  const end = new Date(start.getTime());
   end.setDate(end.getDate() + data.durationDays);
   end.setHours(end.getHours() + data.durationHours);
   end.setMinutes(end.getMinutes() + data.durationMinutes);
@@ -383,6 +395,66 @@ function buildEventPayload(data) {
   };
 
   return event;
+}
+
+function initGoogle() {
+  if (tokenClient || googleInitStarted) {
+    return;
+  }
+
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    return;
+  }
+
+  googleInitStarted = true;
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (tokenResponse) => {
+      if (!tokenResponse || !tokenResponse.access_token) {
+        showErrorDialog("Logowanie do Google nie powiodło się.");
+        return;
+      }
+
+      accessToken = tokenResponse.access_token;
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+      showViewAfterLogin();
+      announce("Zalogowano do Google. Formularz dodawania wydarzeń jest dostępny.");
+    },
+    error_callback: (error) => {
+      let message = "Nie udało się rozpocząć logowania Google.";
+
+      if (error && error.type) {
+        if (error.type === "popup_failed_to_open") {
+          message = "Nie udało się otworzyć okna logowania Google. Sprawdź, czy przeglądarka nie blokuje wyskakujących okien.";
+        } else if (error.type === "popup_closed") {
+          message = "Okno logowania Google zostało zamknięte przed zakończeniem logowania.";
+        } else {
+          message = `Błąd logowania Google: ${error.type}.`;
+        }
+      }
+
+      showErrorDialog(message);
+    },
+  });
+}
+
+function waitForGoogleAndInit(attempt = 0) {
+  initGoogle();
+
+  if (tokenClient) {
+    return;
+  }
+
+  if (attempt >= 40) {
+    showErrorDialog("Nie udało się załadować modułu logowania Google. Odśwież stronę i spróbuj ponownie.");
+    return;
+  }
+
+  window.setTimeout(() => {
+    waitForGoogleAndInit(attempt + 1);
+  }, 250);
 }
 
 async function addEvent() {
@@ -425,6 +497,7 @@ async function addEvent() {
 
       try {
         const errorData = await response.json();
+
         if (errorData && errorData.error && errorData.error.message) {
           message = errorData.error.message;
         } else {
@@ -450,8 +523,8 @@ async function addEvent() {
 
     eventForm.reset();
     syncDateSelectorsWithToday();
-    setCurrentTimeRoundedToFiveMinutes();
     populateDays();
+    setCurrentTimeRoundedToFiveMinutes();
     toggleTimeBlock();
 
     showSuccessDialog("Wydarzenie zostało poprawnie dodane do kalendarza.");
@@ -471,12 +544,14 @@ async function addEvent() {
 
 function restoreSession() {
   const savedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+
   if (savedToken) {
     accessToken = savedToken;
     showViewAfterLogin();
   }
 
   const savedLocation = localStorage.getItem(LOCATION_STORAGE_KEY);
+
   if (savedLocation) {
     locationInput.value = savedLocation;
   }
@@ -484,8 +559,10 @@ function restoreSession() {
 
 function bindEvents() {
   loginBtn.addEventListener("click", () => {
+    initGoogle();
+
     if (!tokenClient) {
-      showErrorDialog("Logowanie Google nie jest jeszcze gotowe. Odśwież stronę.");
+      showErrorDialog("Logowanie Google nie jest jeszcze gotowe. Odśwież stronę i spróbuj ponownie.");
       return;
     }
 
@@ -541,8 +618,7 @@ function init() {
   toggleTimeBlock();
   restoreSession();
   bindEvents();
-
-  window.addEventListener("load", initGoogle);
+  waitForGoogleAndInit();
 }
 
 init();
