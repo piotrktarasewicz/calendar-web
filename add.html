@@ -26,42 +26,50 @@
 
 <h1>Nowe wydarzenie</h1>
 
-<label>Nazwa wydarzenia</label> <input id="title" type="text">
-<label>Lokalizacja</label>
-<input id="location" type="text">
+<label for="title">Nazwa wydarzenia</label> <input id="title" type="text">
 
-  <h2>Początek</h2>
+<label for="location">Lokalizacja</label> <input id="location" type="text">
 
-<label>Dzień</label> <select id="day"></select>
+<h2>Początek</h2>
 
-<label>Miesiąc</label> <select id="month"></select>
+<label for="day">Dzień</label> <select id="day"></select>
 
-<label>Godzina</label> <select id="hour"></select>
-
-<label>Minuta</label> <select id="minute"></select>
-
-<h2>Czas trwania</h2>
-
-<label>Dni</label> <select id="durDays"></select>
-
-<label>Godziny</label> <select id="durHours"></select>
-
-<label>Minuty</label> <select id="durMinutes"></select>
+<label for="month">Miesiąc</label> <select id="month"></select>
 
 <label>
 <input type="checkbox" id="allDay">
 wydarzenie całodniowe
+</label>
 
-</label><button id="addBtn">Dodaj wydarzenie</button>
+<div id="timeBlock">
+
+<label for="hour">Godzina</label> <select id="hour"></select>
+
+<label for="minute">Minuta</label> <select id="minute"></select>
+
+</div>
+
+<h2>Czas trwania</h2>
+
+<label for="durDays">Dni</label> <select id="durDays"></select>
+
+<label for="durHours">Godziny</label> <select id="durHours"></select>
+
+<label for="durMinutes">Minuty</label> <select id="durMinutes"></select>
+
+<button id="addBtn">Dodaj wydarzenie</button>
 
 </div>
 
 <dialog id="dialog">
+
 <p>Wydarzenie utworzone</p>
-<button id="nextBtn">Dodaj kolejne</button>
+
+<button id="okBtn">OK</button>
+
 </dialog>
 
-  <script src="add.js"></script>
+<script src="add.js"></script>
 
 </body>
 </html>
