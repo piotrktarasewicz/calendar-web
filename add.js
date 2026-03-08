@@ -25,6 +25,8 @@ const durDays = document.getElementById("durDays")
 const durHours = document.getElementById("durHours")
 const durMinutes = document.getElementById("durMinutes")
 
+const allDayCheckbox = document.getElementById("allDay")
+
 const dialog = document.getElementById("dialog")
 const nextBtn = document.getElementById("nextBtn")
 
@@ -33,7 +35,6 @@ function speak(text){
 const live=document.createElement("div")
 
 live.setAttribute("aria-live","assertive")
-
 live.style.position="absolute"
 live.style.left="-9999px"
 
@@ -62,7 +63,6 @@ function initGoogle(){
 tokenClient = google.accounts.oauth2.initTokenClient({
 
 client_id: CLIENT_ID,
-
 scope: SCOPES,
 
 callback: (tokenResponse)=>{
@@ -100,10 +100,11 @@ hourSelect.appendChild(opt)
 
 for(let m=0;m<60;m+=5){
 
-let opt=document.createElement("option")
+let mm=m.toString().padStart(2,"0")
 
-opt.value=m
-opt.text=m.toString().padStart(2,"0")
+let opt=document.createElement("option")
+opt.value=mm
+opt.text=mm
 
 minuteSelect.appendChild(opt)
 
@@ -135,9 +136,11 @@ durHours.appendChild(opt)
 
 for(let m=0;m<60;m+=5){
 
+let mm=m.toString().padStart(2,"0")
+
 let opt=document.createElement("option")
-opt.value=m
-opt.text=m
+opt.value=mm
+opt.text=mm
 
 durMinutes.appendChild(opt)
 
@@ -201,15 +204,34 @@ daySelect.appendChild(opt)
 
 monthSelect.onchange=updateDays
 
+function setCurrentTime(){
+
+const now=new Date()
+
+let h=now.getHours()
+let m=now.getMinutes()
+
+m = Math.ceil(m/5)*5
+
+if(m===60){
+m=0
+h++
+}
+
+hourSelect.value=h
+minuteSelect.value=m.toString().padStart(2,"0")
+
+}
+
 addBtn.onclick = async ()=>{
 
 const title=titleInput.value
 const location=locationInput.value
 
-const day=parseInt(daySelect.value)
-const month=parseInt(monthSelect.value)
-const hour=parseInt(hourSelect.value)
-const minute=parseInt(minuteSelect.value)
+const day=daySelect.value
+const month=monthSelect.value
+const hour=hourSelect.value
+const minute=minuteSelect.value
 
 const durationDays=parseInt(durDays.value)
 const durationHours=parseInt(durHours.value)
@@ -222,6 +244,29 @@ alert("Podaj nazwę wydarzenia")
 return
 }
 
+localStorage.setItem("last_location",location)
+
+let event
+
+if(allDayCheckbox.checked){
+
+event={
+
+summary:title,
+location:location,
+
+start:{
+date:`${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}`
+},
+
+end:{
+date:`${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")}`
+}
+
+}
+
+}else{
+
 const start=new Date(year,month-1,day,hour,minute)
 
 const end=new Date(start)
@@ -233,7 +278,7 @@ end.setMinutes(end.getMinutes()+durationMinutes)
 const startISO=start.toISOString()
 const endISO=end.toISOString()
 
-const event={
+event={
 
 summary:title,
 location:location,
@@ -246,6 +291,8 @@ timeZone:"Europe/Warsaw"
 end:{
 dateTime:endISO,
 timeZone:"Europe/Warsaw"
+}
+
 }
 
 }
@@ -272,17 +319,16 @@ body:JSON.stringify(event)
 if(response.ok){
 
 formView.classList.add("hidden")
-dialog.classList.remove("hidden")
+
+dialog.showModal()
 
 speak("Wydarzenie utworzone")
 
 titleInput.value=""
-locationInput.value=""
 
 }else{
 
 const errorText = await response.text()
-
 alert("Błąd zapisu: "+errorText)
 
 }
@@ -291,7 +337,8 @@ alert("Błąd zapisu: "+errorText)
 
 nextBtn.onclick=()=>{
 
-dialog.classList.add("hidden")
+dialog.close()
+
 formView.classList.remove("hidden")
 
 focusForm()
@@ -305,6 +352,13 @@ populateTime()
 populateDuration()
 
 initGoogle()
+
+setCurrentTime()
+
+const savedLocation = localStorage.getItem("last_location")
+if(savedLocation){
+locationInput.value=savedLocation
+}
 
 const savedToken=sessionStorage.getItem("calendar_token")
 
