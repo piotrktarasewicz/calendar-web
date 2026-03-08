@@ -1,75 +1,230 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dodaj wydarzenie</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dodaj wydarzenie</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
 
-<link rel="stylesheet" href="style.css">
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      margin: 0;
+      padding: 20px;
+      max-width: 760px;
+    }
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+    h1, h2 {
+      margin-top: 0;
+    }
 
+    .hidden {
+      display: none !important;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    select,
+    button {
+      font: inherit;
+      padding: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .inline-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .checkbox-row label {
+      margin-bottom: 0;
+      font-weight: 400;
+    }
+
+    .actions {
+      margin-top: 24px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    dialog {
+      width: min(92vw, 520px);
+      padding: 20px;
+      border: 1px solid #888;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .dialog-actions {
+      margin-top: 20px;
+    }
+
+    .hint {
+      font-size: 0.95rem;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    .status {
+      margin: 12px 0 20px;
+      padding: 10px;
+      border: 1px solid #888;
+    }
+  </style>
 </head>
-
 <body>
+  <main>
+    <h1>Dodawanie wydarzenia</h1>
 
-<div id="loginView">
+    <div id="srStatus" class="visually-hidden" aria-live="assertive" aria-atomic="true"></div>
 
-<h1>Dodawanie wydarzenia</h1>
+    <section id="loginView" aria-labelledby="loginHeading">
+      <h2 id="loginHeading">Logowanie</h2>
+      <p class="hint">
+        Najpierw zaloguj się do Google, aby dodać wydarzenie do kalendarza.
+      </p>
+      <div class="actions">
+        <button type="button" id="loginBtn">Zaloguj z Google</button>
+      </div>
+    </section>
 
-<button id="loginBtn">Zaloguj z Google</button>
+    <section id="formView" class="hidden" aria-labelledby="formHeading">
+      <h2 id="formHeading">Nowe wydarzenie</h2>
 
-</div>
+      <div id="formStatus" class="status hidden" aria-live="polite" aria-atomic="true"></div>
 
-<div id="formView" class="hidden">
+      <form id="eventForm" novalidate>
+        <div class="field">
+          <label for="title">Nazwa wydarzenia</label>
+          <input id="title" name="title" type="text" autocomplete="off" required>
+        </div>
 
-<h1>Nowe wydarzenie</h1>
+        <div class="field">
+          <label for="location">Lokalizacja</label>
+          <input id="location" name="location" type="text" autocomplete="street-address">
+        </div>
 
-<label for="title">Nazwa wydarzenia</label> <input id="title" type="text">
+        <fieldset class="field">
+          <legend>Początek</legend>
 
-<label for="location">Lokalizacja</label> <input id="location" type="text">
+          <div class="inline-group">
+            <div>
+              <label for="year">Rok</label>
+              <select id="year" name="year"></select>
+            </div>
 
-<h2>Początek</h2>
+            <div>
+              <label for="month">Miesiąc</label>
+              <select id="month" name="month"></select>
+            </div>
 
-<label for="day">Dzień</label> <select id="day"></select>
+            <div>
+              <label for="day">Dzień</label>
+              <select id="day" name="day"></select>
+            </div>
+          </div>
 
-<label for="month">Miesiąc</label> <select id="month"></select>
+          <div class="field checkbox-row" style="margin-top: 14px;">
+            <input id="allDay" name="allDay" type="checkbox">
+            <label for="allDay">Wydarzenie całodniowe</label>
+          </div>
 
-<label>
-<input type="checkbox" id="allDay">
-wydarzenie całodniowe
-</label>
+          <div id="timeBlock" class="inline-group">
+            <div>
+              <label for="hour">Godzina</label>
+              <select id="hour" name="hour"></select>
+            </div>
 
-<div id="timeBlock">
+            <div>
+              <label for="minute">Minuta</label>
+              <select id="minute" name="minute"></select>
+            </div>
+          </div>
+        </fieldset>
 
-<label for="hour">Godzina</label> <select id="hour"></select>
+        <fieldset class="field">
+          <legend>Czas trwania</legend>
 
-<label for="minute">Minuta</label> <select id="minute"></select>
+          <div class="inline-group">
+            <div>
+              <label for="durDays">Dni</label>
+              <select id="durDays" name="durDays"></select>
+            </div>
 
-</div>
+            <div>
+              <label for="durHours">Godziny</label>
+              <select id="durHours" name="durHours"></select>
+            </div>
 
-<h2>Czas trwania</h2>
+            <div>
+              <label for="durMinutes">Minuty</label>
+              <select id="durMinutes" name="durMinutes"></select>
+            </div>
+          </div>
 
-<label for="durDays">Dni</label> <select id="durDays"></select>
+          <p class="hint" id="durationHint">
+            Dla wydarzenia całodniowego liczba dni oznacza dodatkowe pełne dni. Na przykład 0 dni to wydarzenie jednodniowe, 1 dzień to wydarzenie dwudniowe.
+          </p>
+        </fieldset>
 
-<label for="durHours">Godziny</label> <select id="durHours"></select>
+        <div class="actions">
+          <button type="submit" id="addBtn">Dodaj wydarzenie</button>
+        </div>
+      </form>
+    </section>
+  </main>
 
-<label for="durMinutes">Minuty</label> <select id="durMinutes"></select>
+  <dialog id="successDialog" aria-labelledby="successTitle" aria-describedby="successText">
+    <h2 id="successTitle">Wydarzenie utworzone</h2>
+    <p id="successText">Wydarzenie zostało poprawnie dodane do kalendarza.</p>
+    <div class="dialog-actions">
+      <button type="button" id="successOkBtn">OK</button>
+    </div>
+  </dialog>
 
-<button id="addBtn">Dodaj wydarzenie</button>
+  <dialog id="errorDialog" aria-labelledby="errorTitle" aria-describedby="errorText">
+    <h2 id="errorTitle">Nie udało się dodać wydarzenia</h2>
+    <p id="errorText">Wystąpił błąd.</p>
+    <div class="dialog-actions">
+      <button type="button" id="errorOkBtn">OK</button>
+    </div>
+  </dialog>
 
-</div>
-
-<dialog id="dialog">
-
-<p>Wydarzenie utworzone</p>
-
-<button id="okBtn">OK</button>
-
-</dialog>
-
-<script src="add.js"></script>
-
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="add.js"></script>
 </body>
 </html>
