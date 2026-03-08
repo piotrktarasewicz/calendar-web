@@ -1,395 +1,548 @@
-const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleusercontent.com"
+const CLIENT_ID = "1056707372867-8fcmbacro7rn36o3ntjcr2bt6uf5ooj7.apps.googleusercontent.com";
 
-const FAMILY_CALENDAR = "family02518920920168070169@group.calendar.google.com"
+/*
+  Wpisz tutaj prawdziwe ID kalendarza Google, na przykład:
+  family02518920920168070169@group.calendar.google.com
 
-const SCOPES = "https://www.googleapis.com/auth/calendar"
+  Bez:
+  - nawiasów
+  - mailto:
+  - markdown
+*/
+const FAMILY_CALENDAR = "family02518920920168070169@group.calendar.google.com";
 
-let tokenClient
-let accessToken = null
+const SCOPES = "https://www.googleapis.com/auth/calendar";
+const TIME_ZONE = "Europe/Warsaw";
+const TOKEN_STORAGE_KEY = "calendar_token";
+const LOCATION_STORAGE_KEY = "last_location";
 
-const loginView = document.getElementById("loginView")
-const formView = document.getElementById("formView")
+let tokenClient = null;
+let accessToken = null;
+let lastFocusedElement = null;
 
-const loginBtn = document.getElementById("loginBtn")
-const addBtn = document.getElementById("addBtn")
+const loginView = document.getElementById("loginView");
+const formView = document.getElementById("formView");
+const loginBtn = document.getElementById("loginBtn");
+const eventForm = document.getElementById("eventForm");
+const addBtn = document.getElementById("addBtn");
 
-const titleInput = document.getElementById("title")
-const locationInput = document.getElementById("location")
+const titleInput = document.getElementById("title");
+const locationInput = document.getElementById("location");
 
-const daySelect = document.getElementById("day")
-const monthSelect = document.getElementById("month")
-const hourSelect = document.getElementById("hour")
-const minuteSelect = document.getElementById("minute")
+const yearSelect = document.getElementById("year");
+const monthSelect = document.getElementById("month");
+const daySelect = document.getElementById("day");
 
-const durDays = document.getElementById("durDays")
-const durHours = document.getElementById("durHours")
-const durMinutes = document.getElementById("durMinutes")
+const allDayCheckbox = document.getElementById("allDay");
+const timeBlock = document.getElementById("timeBlock");
+const hourSelect = document.getElementById("hour");
+const minuteSelect = document.getElementById("minute");
 
-const allDayCheckbox = document.getElementById("allDay")
-const timeBlock = document.getElementById("timeBlock")
+const durDaysSelect = document.getElementById("durDays");
+const durHoursSelect = document.getElementById("durHours");
+const durMinutesSelect = document.getElementById("durMinutes");
 
-const dialog = document.getElementById("dialog")
-const okBtn = document.getElementById("okBtn")
+const srStatus = document.getElementById("srStatus");
+const formStatus = document.getElementById("formStatus");
 
-function speak(text){
+const successDialog = document.getElementById("successDialog");
+const successOkBtn = document.getElementById("successOkBtn");
 
-const live=document.createElement("div")
+const errorDialog = document.getElementById("errorDialog");
+const errorText = document.getElementById("errorText");
+const errorOkBtn = document.getElementById("errorOkBtn");
 
-live.setAttribute("aria-live","assertive")
-live.style.position="absolute"
-live.style.left="-9999px"
-
-live.textContent=text
-
-document.body.appendChild(live)
-
-setTimeout(()=>{
-document.body.removeChild(live)
-},2000)
-
+function announce(message) {
+  srStatus.textContent = "";
+  window.setTimeout(() => {
+    srStatus.textContent = message;
+  }, 30);
 }
 
-function focusForm(){
-
-titleInput.focus()
-
-setTimeout(()=>{
-titleInput.focus()
-},200)
-
+function showFormStatus(message) {
+  formStatus.textContent = message;
+  formStatus.classList.remove("hidden");
 }
 
-function initGoogle(){
-
-tokenClient = google.accounts.oauth2.initTokenClient({
-
-client_id: CLIENT_ID,
-scope: SCOPES,
-
-callback: (tokenResponse)=>{
-
-accessToken = tokenResponse.access_token
-
-sessionStorage.setItem("calendar_token", accessToken)
-
-loginView.classList.add("hidden")
-formView.classList.remove("hidden")
-
-focusForm()
-
+function clearFormStatus() {
+  formStatus.textContent = "";
+  formStatus.classList.add("hidden");
 }
 
-})
-
+function showViewAfterLogin() {
+  loginView.classList.add("hidden");
+  formView.classList.remove("hidden");
+  focusTitle();
 }
 
-loginBtn.onclick = ()=>{
-tokenClient.requestAccessToken()
+function focusTitle() {
+  window.setTimeout(() => {
+    titleInput.focus();
+  }, 0);
 }
 
-function populateTime(){
-
-for(let h=0;h<24;h++){
-
-let opt=document.createElement("option")
-opt.value=h
-opt.text=h.toString().padStart(2,"0")
-
-hourSelect.appendChild(opt)
-
+function rememberLastFocus() {
+  lastFocusedElement = document.activeElement;
 }
 
-for(let m=0;m<60;m+=5){
+function restoreLastFocus() {
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+    window.setTimeout(() => lastFocusedElement.focus(), 0);
+    return;
+  }
 
-let mm=m.toString().padStart(2,"0")
-
-let opt=document.createElement("option")
-opt.value=mm
-opt.text=mm
-
-minuteSelect.appendChild(opt)
-
+  focusTitle();
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
 }
 
-function populateDuration(){
-
-for(let d=0;d<=30;d++){
-
-let opt=document.createElement("option")
-opt.value=d
-opt.text=d
-
-durDays.appendChild(opt)
-
+function toLocalDateTimeString(date) {
+  const year = date.getFullYear();
+  const month = pad2(date.getMonth() + 1);
+  const day = pad2(date.getDate());
+  const hours = pad2(date.getHours());
+  const minutes = pad2(date.getMinutes());
+  const seconds = "00";
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
-for(let h=0;h<24;h++){
-
-let opt=document.createElement("option")
-opt.value=h
-opt.text=h
-
-durHours.appendChild(opt)
-
+function getDaysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
 }
 
-for(let m=0;m<60;m+=5){
+function populateYears() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
 
-let mm=m.toString().padStart(2,"0")
+  yearSelect.innerHTML = "";
 
-let opt=document.createElement("option")
-opt.value=mm
-opt.text=mm
-
-durMinutes.appendChild(opt)
-
+  for (let year = currentYear; year <= currentYear + 2; year += 1) {
+    const option = document.createElement("option");
+    option.value = String(year);
+    option.textContent = String(year);
+    yearSelect.appendChild(option);
+  }
 }
 
+function populateMonths() {
+  monthSelect.innerHTML = "";
+
+  for (let month = 1; month <= 12; month += 1) {
+    const option = document.createElement("option");
+    option.value = String(month);
+    option.textContent = String(month);
+    monthSelect.appendChild(option);
+  }
 }
 
-function populateDate(){
+function populateDays() {
+  const selectedYear = Number(yearSelect.value);
+  const selectedMonth = Number(monthSelect.value);
+  const today = new Date();
 
-const today=new Date()
+  const previousValue = daySelect.value;
+  const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
 
-const currentMonth=today.getMonth()+1
-const currentDay=today.getDate()
+  daySelect.innerHTML = "";
 
-for(let m=currentMonth;m<=12;m++){
+  let firstAvailableDay = 1;
 
-let opt=document.createElement("option")
+  if (
+    selectedYear === today.getFullYear() &&
+    selectedMonth === today.getMonth() + 1
+  ) {
+    firstAvailableDay = today.getDate();
+  }
 
-opt.value=m
-opt.text=m
+  for (let day = firstAvailableDay; day <= daysInMonth; day += 1) {
+    const option = document.createElement("option");
+    option.value = String(day);
+    option.textContent = String(day);
+    daySelect.appendChild(option);
+  }
 
-monthSelect.appendChild(opt)
-
+  if (previousValue && [...daySelect.options].some((opt) => opt.value === previousValue)) {
+    daySelect.value = previousValue;
+  }
 }
 
-updateDays()
-
+function syncDateSelectorsWithToday() {
+  const now = new Date();
+  yearSelect.value = String(now.getFullYear());
+  monthSelect.value = String(now.getMonth() + 1);
+  populateDays();
+  daySelect.value = String(now.getDate());
 }
 
-function updateDays(){
+function populateTime() {
+  hourSelect.innerHTML = "";
+  minuteSelect.innerHTML = "";
 
-daySelect.innerHTML=""
+  for (let hour = 0; hour < 24; hour += 1) {
+    const option = document.createElement("option");
+    option.value = String(hour);
+    option.textContent = pad2(hour);
+    hourSelect.appendChild(option);
+  }
 
-const today=new Date()
-
-const selectedMonth=parseInt(monthSelect.value)
-
-const currentMonth=today.getMonth()+1
-const currentDay=today.getDate()
-
-const daysInMonth=new Date(today.getFullYear(),selectedMonth,0).getDate()
-
-let startDay=1
-
-if(selectedMonth===currentMonth){
-startDay=currentDay
+  for (let minute = 0; minute < 60; minute += 5) {
+    const option = document.createElement("option");
+    option.value = String(minute);
+    option.textContent = pad2(minute);
+    minuteSelect.appendChild(option);
+  }
 }
 
-for(let d=startDay;d<=daysInMonth;d++){
+function populateDuration() {
+  durDaysSelect.innerHTML = "";
+  durHoursSelect.innerHTML = "";
+  durMinutesSelect.innerHTML = "";
 
-let opt=document.createElement("option")
+  for (let day = 0; day <= 30; day += 1) {
+    const option = document.createElement("option");
+    option.value = String(day);
+    option.textContent = String(day);
+    durDaysSelect.appendChild(option);
+  }
 
-opt.value=d
-opt.text=d
+  for (let hour = 0; hour <= 23; hour += 1) {
+    const option = document.createElement("option");
+    option.value = String(hour);
+    option.textContent = String(hour);
+    durHoursSelect.appendChild(option);
+  }
 
-daySelect.appendChild(opt)
-
+  for (let minute = 0; minute < 60; minute += 5) {
+    const option = document.createElement("option");
+    option.value = String(minute);
+    option.textContent = String(minute);
+    durMinutesSelect.appendChild(option);
+  }
 }
 
+function setCurrentTimeRoundedToFiveMinutes() {
+  const now = new Date();
+  const rounded = new Date(now.getTime());
+
+  rounded.setSeconds(0, 0);
+
+  const minute = rounded.getMinutes();
+  const roundedMinutes = Math.ceil(minute / 5) * 5;
+
+  if (roundedMinutes === 60) {
+    rounded.setHours(rounded.getHours() + 1, 0, 0, 0);
+  } else {
+    rounded.setMinutes(roundedMinutes, 0, 0);
+  }
+
+  hourSelect.value = String(rounded.getHours());
+  minuteSelect.value = String(rounded.getMinutes());
 }
 
-monthSelect.onchange=updateDays
-
-allDayCheckbox.onchange = ()=>{
-
-if(allDayCheckbox.checked){
-timeBlock.style.display="none"
-}else{
-timeBlock.style.display="block"
+function toggleTimeBlock() {
+  const isAllDay = allDayCheckbox.checked;
+  timeBlock.classList.toggle("hidden", isAllDay);
+  durHoursSelect.disabled = isAllDay;
+  durMinutesSelect.disabled = isAllDay;
 }
 
+function initGoogle() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    showErrorDialog(
+      "Nie udało się załadować logowania Google. Odśwież stronę i spróbuj ponownie."
+    );
+    return;
+  }
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (tokenResponse) => {
+      if (!tokenResponse || !tokenResponse.access_token) {
+        showErrorDialog("Logowanie do Google nie powiodło się.");
+        return;
+      }
+
+      accessToken = tokenResponse.access_token;
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+      showViewAfterLogin();
+      announce("Zalogowano do Google. Formularz dodawania wydarzeń jest dostępny.");
+    },
+  });
 }
 
-function setCurrentTime(){
-
-const now=new Date()
-
-let h=now.getHours()
-let m=now.getMinutes()
-
-m = Math.ceil(m/5)*5
-
-if(m===60){
-m=0
-h++
+function showSuccessDialog(message) {
+  rememberLastFocus();
+  document.getElementById("successText").textContent = message;
+  successDialog.showModal();
+  successOkBtn.focus();
+  announce(message);
 }
 
-hourSelect.value=h
-minuteSelect.value=m.toString().padStart(2,"0")
-
+function showErrorDialog(message) {
+  rememberLastFocus();
+  errorText.textContent = message;
+  errorDialog.showModal();
+  errorOkBtn.focus();
+  announce(message);
 }
 
-addBtn.onclick = async ()=>{
-
-const title=titleInput.value
-const location=locationInput.value
-
-const day=daySelect.value
-const month=monthSelect.value
-const hour=hourSelect.value
-const minute=minuteSelect.value
-
-const durationDays=parseInt(durDays.value)
-const durationHours=parseInt(durHours.value)
-const durationMinutes=parseInt(durMinutes.value)
-
-const year=new Date().getFullYear()
-
-if(!title){
-alert("Podaj nazwę wydarzenia")
-return
+function closeSuccessDialog() {
+  successDialog.close();
+  restoreLastFocus();
 }
 
-localStorage.setItem("last_location",location)
-
-let event
-
-if(allDayCheckbox.checked){
-
-const startDate = new Date(year, month-1, day)
-
-const endDate = new Date(startDate)
-endDate.setDate(endDate.getDate() + durationDays + 1)
-
-const startStr = startDate.toISOString().split("T")[0]
-const endStr   = endDate.toISOString().split("T")[0]
-
-event={
-
-summary:title,
-location:location,
-
-start:{
-date:startStr
-},
-
-end:{
-date:endStr
+function closeErrorDialog() {
+  errorDialog.close();
+  restoreLastFocus();
 }
 
+function validateForm(data) {
+  const title = data.title.trim();
+
+  if (!title) {
+    return "Podaj nazwę wydarzenia.";
+  }
+
+  if (!FAMILY_CALENDAR || FAMILY_CALENDAR.includes("mailto:") || FAMILY_CALENDAR.includes("[") || FAMILY_CALENDAR.includes("]")) {
+    return "Nieprawidłowy identyfikator kalendarza w pliku add.js. Wpisz czyste ID kalendarza Google.";
+  }
+
+  if (!data.allDay) {
+    const totalMinutes =
+      (data.durationDays * 24 * 60) +
+      (data.durationHours * 60) +
+      data.durationMinutes;
+
+    if (totalMinutes <= 0) {
+      return "Dla wydarzenia o konkretnej godzinie czas trwania musi być większy od zera.";
+    }
+  }
+
+  return "";
 }
 
-}else{
-
-const start=new Date(year,month-1,day,hour,minute)
-
-const end=new Date(start)
-
-end.setDate(end.getDate()+durationDays)
-end.setHours(end.getHours()+durationHours)
-end.setMinutes(end.getMinutes()+durationMinutes)
-
-const startISO=start.toISOString()
-const endISO=end.toISOString()
-
-event={
-
-summary:title,
-location:location,
-
-start:{
-dateTime:startISO,
-timeZone:"Europe/Warsaw"
-},
-
-end:{
-dateTime:endISO,
-timeZone:"Europe/Warsaw"
+function getFormData() {
+  return {
+    title: titleInput.value,
+    location: locationInput.value.trim(),
+    year: Number(yearSelect.value),
+    month: Number(monthSelect.value),
+    day: Number(daySelect.value),
+    allDay: allDayCheckbox.checked,
+    hour: Number(hourSelect.value),
+    minute: Number(minuteSelect.value),
+    durationDays: Number(durDaysSelect.value),
+    durationHours: Number(durHoursSelect.value),
+    durationMinutes: Number(durMinutesSelect.value),
+  };
 }
 
+function buildEventPayload(data) {
+  const event = {
+    summary: data.title.trim(),
+  };
+
+  if (data.location) {
+    event.location = data.location;
+  }
+
+  if (data.allDay) {
+    const startDate = new Date(data.year, data.month - 1, data.day);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + data.durationDays + 1);
+
+    event.start = {
+      date: `${startDate.getFullYear()}-${pad2(startDate.getMonth() + 1)}-${pad2(startDate.getDate())}`,
+    };
+
+    event.end = {
+      date: `${endDate.getFullYear()}-${pad2(endDate.getMonth() + 1)}-${pad2(endDate.getDate())}`,
+    };
+
+    return event;
+  }
+
+  const start = new Date(data.year, data.month - 1, data.day, data.hour, data.minute, 0, 0);
+  const end = new Date(start.getTime());
+
+  end.setDate(end.getDate() + data.durationDays);
+  end.setHours(end.getHours() + data.durationHours);
+  end.setMinutes(end.getMinutes() + data.durationMinutes);
+
+  event.start = {
+    dateTime: toLocalDateTimeString(start),
+    timeZone: TIME_ZONE,
+  };
+
+  event.end = {
+    dateTime: toLocalDateTimeString(end),
+    timeZone: TIME_ZONE,
+  };
+
+  return event;
 }
 
+async function addEvent() {
+  clearFormStatus();
+
+  if (!accessToken) {
+    showErrorDialog("Najpierw zaloguj się do Google.");
+    return;
+  }
+
+  const data = getFormData();
+  const validationError = validateForm(data);
+
+  if (validationError) {
+    showErrorDialog(validationError);
+    return;
+  }
+
+  const payload = buildEventPayload(data);
+
+  addBtn.disabled = true;
+  addBtn.textContent = "Dodawanie wydarzenia...";
+  showFormStatus("Trwa dodawanie wydarzenia do kalendarza.");
+
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(FAMILY_CALENDAR)}/events`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.ok) {
+      let message = "Nieznany błąd zapisu.";
+
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.error && errorData.error.message) {
+          message = errorData.error.message;
+        } else {
+          message = await response.text();
+        }
+      } catch {
+        try {
+          message = await response.text();
+        } catch {
+          message = "Nie udało się odczytać informacji o błędzie.";
+        }
+      }
+
+      showErrorDialog(`Błąd zapisu: ${message}`);
+      return;
+    }
+
+    if (data.location) {
+      localStorage.setItem(LOCATION_STORAGE_KEY, data.location);
+    } else {
+      localStorage.removeItem(LOCATION_STORAGE_KEY);
+    }
+
+    eventForm.reset();
+    syncDateSelectorsWithToday();
+    setCurrentTimeRoundedToFiveMinutes();
+    populateDays();
+    toggleTimeBlock();
+
+    showSuccessDialog("Wydarzenie zostało poprawnie dodane do kalendarza.");
+  } catch (error) {
+    const message =
+      error && error.message
+        ? error.message
+        : "Wystąpił problem z połączeniem lub przetwarzaniem żądania.";
+
+    showErrorDialog(`Nie udało się dodać wydarzenia. ${message}`);
+  } finally {
+    addBtn.disabled = false;
+    addBtn.textContent = "Dodaj wydarzenie";
+    clearFormStatus();
+  }
 }
 
-const response=await fetch(
+function restoreSession() {
+  const savedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  if (savedToken) {
+    accessToken = savedToken;
+    showViewAfterLogin();
+  }
 
-"https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(FAMILY_CALENDAR)+"/events",
-
-{
-
-method:"POST",
-
-headers:{
-Authorization:"Bearer "+accessToken,
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify(event)
-
+  const savedLocation = localStorage.getItem(LOCATION_STORAGE_KEY);
+  if (savedLocation) {
+    locationInput.value = savedLocation;
+  }
 }
 
-)
+function bindEvents() {
+  loginBtn.addEventListener("click", () => {
+    if (!tokenClient) {
+      showErrorDialog("Logowanie Google nie jest jeszcze gotowe. Odśwież stronę.");
+      return;
+    }
 
-if(response.ok){
+    tokenClient.requestAccessToken();
+  });
 
-formView.classList.add("hidden")
+  eventForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await addEvent();
+  });
 
-dialog.showModal()
+  yearSelect.addEventListener("change", populateDays);
+  monthSelect.addEventListener("change", populateDays);
 
-speak("Wydarzenie utworzone")
+  allDayCheckbox.addEventListener("change", () => {
+    toggleTimeBlock();
 
-titleInput.value=""
+    if (allDayCheckbox.checked) {
+      announce("Wybrano wydarzenie całodniowe. Pola godziny i minuty zostały ukryte.");
+    } else {
+      announce("Wyłączono wydarzenie całodniowe. Pola godziny i minuty są ponownie dostępne.");
+    }
+  });
 
-}else{
+  successOkBtn.addEventListener("click", () => {
+    closeSuccessDialog();
+    focusTitle();
+  });
 
-const errorText = await response.text()
-alert("Błąd zapisu: "+errorText)
+  errorOkBtn.addEventListener("click", () => {
+    closeErrorDialog();
+  });
 
+  successDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeSuccessDialog();
+    focusTitle();
+  });
+
+  errorDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeErrorDialog();
+  });
 }
 
+function init() {
+  populateYears();
+  populateMonths();
+  syncDateSelectorsWithToday();
+  populateTime();
+  populateDuration();
+  setCurrentTimeRoundedToFiveMinutes();
+  toggleTimeBlock();
+  restoreSession();
+  bindEvents();
+
+  window.addEventListener("load", initGoogle);
 }
 
-okBtn.onclick=()=>{
-
-dialog.close()
-
-formView.classList.remove("hidden")
-
-focusForm()
-
-}
-
-window.onload = ()=>{
-
-populateDate()
-populateTime()
-populateDuration()
-
-initGoogle()
-
-setCurrentTime()
-
-const savedLocation = localStorage.getItem("last_location")
-if(savedLocation){
-locationInput.value=savedLocation
-}
-
-const savedToken=sessionStorage.getItem("calendar_token")
-
-if(savedToken){
-
-accessToken=savedToken
-
-loginView.classList.add("hidden")
-formView.classList.remove("hidden")
-
-focusForm()
-
-}
-
-}
+init();
